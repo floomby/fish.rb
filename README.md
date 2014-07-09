@@ -8,12 +8,7 @@ There is a slew of examples in the examples directory.
 Todo
 ----
 
-There are some unfinished things that I will get done in the
-next couple of days.
-
- * Fix bugs - it still has many terminal bugs that need fixing
- * Command line options - same sort of thing fish.py has
- * Gemification - everyone loves rubygems :P
+Things are mostly done, it needs some thorough testing
 
  
 Thoughts
