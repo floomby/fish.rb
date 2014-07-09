@@ -60,7 +60,6 @@ class Stack
         end
         
         def self.safe_single_pop; @data.pop end
-        
         def self.push value; @data << value end
         
         @reg = nil
@@ -83,7 +82,7 @@ class Interpreter
         '_'  => { 'r' => 'r', 'l' => 'l', 'u' => 'd', 'd' => 'u' },
         '|'  => { 'r' => 'l', 'l' => 'r', 'u' => 'u', 'd' => 'd' },
         '/'  => { 'r' => 'u', 'l' => 'd', 'u' => 'r', 'd' => 'l' },
-        '\\' => { 'r' => 'd', 'l' => 'u', 'u' => 'l', 'u' => 'r' },
+        '\\' => { 'r' => 'd', 'l' => 'u', 'u' => 'l', 'd' => 'r' },
         '#'  => { 'r' => 'l', 'l' => 'r', 'u' => 'd', 'd' => 'u' },
     }    
     
@@ -129,7 +128,7 @@ class Interpreter
         'n' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].to_s },
         'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push cntl[:ibuf][0].ord; cntl[:ibuf] = cntl[:ibuf][1..-1] },
         # reflection
-        'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push box.at stks[-1].pop 2 },
+        'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (box.at stks[-1].pop 2).ord },
         'p' => lambda { |pt, dir, stks, box, cntl| box.set (stks[-1].pop 2), (stks[-1].pop 1) },
         # miscellaneous
         '&' => lambda { |pt, dir, stks, box, cntl| stks[-1].reg },
@@ -165,12 +164,13 @@ class Interpreter
         op = @box.at @pt
         while !@cntl[:done] do
             op = ' ' if op.nil?
+            puts op
             func = @@ops[op]
             abort 'something smells fishy... (invalid instruction)' unless func.lambda?
             func.call @pt, @dir, @stks, @box, @cntl
             op = @box.send @dir, @pt
         end
-        
+        puts ''
         puts @cntl[:obuf]
     end
 end # class Interpreter
