@@ -3,6 +3,8 @@ fish.rb
 
 A [fish](http://esolangs.org/wiki/Fish) interpreter in ruby.
 
+    gem install fish.rb
+
 There is a slew of examples in the examples directory.
 
 Todo
