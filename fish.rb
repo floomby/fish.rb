@@ -124,8 +124,10 @@ class Interpreter
         '[' => lambda { |pt, dir, stks, box, cntl| stks << (Stack.new stks[-1].pop stks[-1].pop 1) },
         ']' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.concat stks.pop.data },
         # io
-        'o' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].round.chr },
-        'n' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].to_s },
+        #'o' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].round.chr },
+        #'n' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].to_s },
+        'o' => lambda { |pt, dir, stks, box, cntl| $stdout.write (stks[-1].pop 1)[0].round.chr },
+        'n' => lambda { |pt, dir, stks, box, cntl| $stdout.write (stks[-1].pop 1)[0].to_s },
         'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push cntl[:ibuf][0].ord; cntl[:ibuf] = cntl[:ibuf][1..-1] },
         # reflection
         'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (box.at stks[-1].pop 2).ord },
@@ -161,17 +163,18 @@ class Interpreter
             :done => false,
         }
         
+        
         op = @box.at @pt
         while !@cntl[:done] do
-            op = ' ' if op.nil?
-            puts op
+            #op = ' ' if op.nil?
+            #puts op
             func = @@ops[op]
             abort 'something smells fishy... (invalid instruction)' unless func.lambda?
             func.call @pt, @dir, @stks, @box, @cntl
             op = @box.send @dir, @pt
         end
-        puts ''
-        puts @cntl[:obuf]
+        #puts ''
+        #puts @cntl[:obuf]
     end
 end # class Interpreter
 
