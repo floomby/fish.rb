@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'pp'
+require 'optparse'
 
 class CodeBox
     def initialize lines
@@ -45,7 +46,6 @@ class CodeBox
             pt.replace [pt[0], (tmp == [] ? ys.max : tmp.max)]
             at pt
         end
-        
     end
 end # class CodeBox
 
@@ -77,6 +77,7 @@ end # class Stack
 
 class Interpreter
     @@prng = Random.new
+    @@stdout = $stdout
     
     @@mirrors = {
         '_'  => { 'r' => 'r', 'l' => 'l', 'u' => 'd', 'd' => 'u' },
@@ -124,11 +125,9 @@ class Interpreter
         '[' => lambda { |pt, dir, stks, box, cntl| stks << (Stack.new stks[-1].pop stks[-1].pop 1) },
         ']' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.concat stks.pop.data },
         # io
-        #'o' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].round.chr },
-        #'n' => lambda { |pt, dir, stks, box, cntl| cntl[:obuf] += (stks[-1].pop 1)[0].to_s },
-        'o' => lambda { |pt, dir, stks, box, cntl| $stdout.write (stks[-1].pop 1)[0].round.chr },
-        'n' => lambda { |pt, dir, stks, box, cntl| $stdout.write (stks[-1].pop 1)[0].to_s },
-        'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push cntl[:ibuf][0].ord; cntl[:ibuf] = cntl[:ibuf][1..-1] },
+        'o' => lambda { |pt, dir, stks, box, cntl| @@stdout.write (stks[-1].pop 1)[0].round.chr },
+        'n' => lambda { |pt, dir, stks, box, cntl| @@stdout.write (stks[-1].pop 1)[0].to_s },
+        'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (cntl[:ibuf].empty? ? -1 : cntl[:ibuf][0].ord); cntl[:ibuf] = cntl[:ibuf][1..-1] unless cntl[:ibuf].length < 2 },
         # reflection
         'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (box.at stks[-1].pop 2).ord },
         'p' => lambda { |pt, dir, stks, box, cntl| box.set (stks[-1].pop 2), (stks[-1].pop 1) },
@@ -150,7 +149,7 @@ class Interpreter
         @@ops.merge! v => lambda { |pt, dir, stks, box, cntl| stks[-1].push (v.ord - 0x57) }
     end
     
-    def initialize lines, in_buf
+    def initialize lines, options
         @box = CodeBox.new lines.collect { |line| line.chomp.chomp }
         
         @pt = [0, 0]
@@ -158,26 +157,38 @@ class Interpreter
         @stks = []
         @stks << (Stack.new [])
         @cntl = {
-            :ibuf => in_buf,
-            :obuf => "",
+            :ibuf => options[:stdin],
             :done => false,
         }
         
         
         op = @box.at @pt
         while !@cntl[:done] do
-            #op = ' ' if op.nil?
-            #puts op
+            op = ' ' if op.nil?
+            if options[:debug] >= 3; puts op end
             func = @@ops[op]
-            abort 'something smells fishy... (invalid instruction)' unless func.lambda?
+            abort 'something smells fishy... (invalid instruction)' if func.nil?
             func.call @pt, @dir, @stks, @box, @cntl
             op = @box.send @dir, @pt
         end
-        #puts ''
-        #puts @cntl[:obuf]
     end
 end # class Interpreter
 
 
-# main
-Interpreter.new (IO.readlines ARGV.shift), ""
+options = {}
+optparse = OptionParser.new do |opts|
+    opts.banner = "fish.rb <options> <files>"
+    
+    opts.on '-h', '--help', 'Display help' do; puts opts; exit end
+    options[:debug] = 0
+    opts.on '-d [level]', '--debug [level]', 'Print debug messages (max of 3, defaults to 1)' do |opt|
+        options[:debug] = opt.to_i || options[:debug] = 1
+    end
+    options[:stdin] = ""
+    opts.on '-s str', '--stdin str', 'Stdin for fish script' do |opt|; options[:stdin] = opt end
+    opts.on '-r file', '--redir-stdout file', 'Redirect fish stdout to file' do |opt|
+        options[:stdout] = File.open opt, 'w'
+    end
+end.parse!
+
+Interpreter.new (IO.readlines ARGV.shift), options
