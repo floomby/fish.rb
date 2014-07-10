@@ -13,7 +13,7 @@ spec = Gem::Specification.new do |gem|
     gem.summary      = "A fish interpreter"
     gem.description  = "Ruby fish interpreter for the newer multi-stack version of fish"
     
-    gem.files        = `git ls-files`.split($\)
+    gem.files        = `git ls-files | grep -v examples`.split($\)
     
     gem.bindir       = "./"
     gem.executables  = ["fish.rb"]

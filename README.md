@@ -7,6 +7,10 @@ A [fish](http://esolangs.org/wiki/Fish) interpreter in ruby.
 
 There is a slew of examples in the examples directory.
 
+Usage
+-----
+
+
 Todo
 ----
 
