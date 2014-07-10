@@ -64,18 +64,19 @@ class Stack
         
         @reg = nil
         def self.reg
-            if @reg.is_nil?
-                @reg = self.pop 1
+            if @reg.nil?
+                @reg = (self.pop 1)[0]
             else
                 self.push @reg
                 @reg = nil
-                ret
             end
         end
     end
 end # class Stack
 
 class Interpreter
+    def self.set_stdout file; @@stdout = file end
+    
     @@prng = Random.new
     @@stdout = $stdout
     
@@ -118,16 +119,16 @@ class Interpreter
         '~' => lambda { |pt, dir, stks, box, cntl| stks[-1].pop 1 },
         '$' => lambda { |pt, dir, stks, box, cntl| x, y = stks[-1].pop 2; stks[-1].push y; stks[-1].push x },
         '@' => lambda { |pt, dir, stks, box, cntl| x, y, z = stks[-1].pop 3; stks[-1].push z; stks[-1].push x; stks[-1].push y },
-        '}' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.rotate! 1 },
-        '{' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.rotate! -1 },
+        '{' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.rotate! 1 },
+        '}' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.rotate! -1 },
         'r' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.reverse! },
         'l' => lambda { |pt, dir, stks, box, cntl| stks[-1].push stks[-1].data.length },
-        '[' => lambda { |pt, dir, stks, box, cntl| stks << (Stack.new stks[-1].pop stks[-1].pop 1) },
-        ']' => lambda { |pt, dir, stks, box, cntl| stks[-1].data.concat stks.pop.data },
+        '[' => lambda { |pt, dir, stks, box, cntl| stks << (Stack.new stks[-1].pop (stks[-1].pop 1)[0]) },
+        ']' => lambda { |pt, dir, stks, box, cntl| stks[-2].data.concat stks.pop.data },
         # io
         'o' => lambda { |pt, dir, stks, box, cntl| @@stdout.write (stks[-1].pop 1)[0].round.chr },
         'n' => lambda { |pt, dir, stks, box, cntl| @@stdout.write (stks[-1].pop 1)[0].to_s },
-        'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (cntl[:ibuf].empty? ? -1 : cntl[:ibuf][0].ord); cntl[:ibuf] = cntl[:ibuf][1..-1] unless cntl[:ibuf].length < 2 },
+        'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (cntl[:ibuf].empty? ? -1 : cntl[:ibuf][0].ord); cntl[:ibuf] = cntl[:ibuf][1..-1] unless cntl[:ibuf].length < 1 },
         # reflection
         'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (box.at stks[-1].pop 2).ord },
         'p' => lambda { |pt, dir, stks, box, cntl| box.set (stks[-1].pop 2), (stks[-1].pop 1) },
@@ -155,7 +156,7 @@ class Interpreter
         @pt = [0, 0]
         @dir = 'r'
         @stks = []
-        @stks << (Stack.new [])
+        @stks << (Stack.new options[:stack])
         @cntl = {
             :ibuf => options[:stdin],
             :done => false,
@@ -171,24 +172,32 @@ class Interpreter
             func.call @pt, @dir, @stks, @box, @cntl
             op = @box.send @dir, @pt
         end
+        @@stdout.flush
     end
 end # class Interpreter
 
+banner = "usage: fish <options> <files>"
 
 options = {}
 optparse = OptionParser.new do |opts|
-    opts.banner = "fish.rb <options> <files>"
+    opts.banner = banner
     
     opts.on '-h', '--help', 'Display help' do; puts opts; exit end
     options[:debug] = 0
-    opts.on '-d [level]', '--debug [level]', 'Print debug messages (max of 3, defaults to 1)' do |opt|
+    opts.on '-d <level>', '--debug <level>', 'Print debug messages (max of 3, defaults to 1)' do |opt|
         options[:debug] = opt.to_i || options[:debug] = 1
     end
     options[:stdin] = ""
-    opts.on '-s str', '--stdin str', 'Stdin for fish script' do |opt|; options[:stdin] = opt end
-    opts.on '-r file', '--redir-stdout file', 'Redirect fish stdout to file' do |opt|
-        options[:stdout] = File.open opt, 'w'
+    opts.on '-s <input>', '--stdin <input>', 'Stdin for fish script' do |opt|; options[:stdin] = opt end
+    opts.on '-r <file>', '--redir-stdout <file>', 'Redirect fish stdout to file (useful when debuging)' do |opt|
+        Interpreter.set_stdout (File.open opt, 'w')
+    end
+    options[:stack] = []
+    opts.on '-v <vector>', '--vector <vector>', Array, 'Inital stack vector' do |opt|
+        options[:stack] = opt.collect { |x| x.to_i }
     end
 end.parse!
 
-Interpreter.new (IO.readlines ARGV.shift), options
+puts banner if ARGV.empty?
+
+ARGV.each { |fish| Interpreter.new (IO.readlines fish), options }
