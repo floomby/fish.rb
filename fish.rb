@@ -55,7 +55,7 @@ class Stack
         @data = data
         
         def self.pop cnt
-            if cnt > @data.length; abort 'something smells fishy... (stack error)' end
+            if cnt > @data.length; abort "\nsomething smells fishy... (stack error)" end
             @data.pop cnt
         end
         
@@ -88,7 +88,7 @@ class Interpreter
     }    
     
     @@div_chk = lambda do |d|
-        abort 'something smells fishy... (division by zero)' unless d != 0
+        abort "\nsomething smells fishy... (division by zero)" unless d != 0
     end
     
     @@ops = {
@@ -167,7 +167,7 @@ class Interpreter
             op = ' ' if op.nil?
             if options[:debug] >= 3; puts op end
             func = @@ops[op]
-            abort 'something smells fishy... (invalid instruction)' if func.nil?
+            abort "\nsomething smells fishy... (invalid instruction)" if func.nil?
             func.call @pt, @dir, @stks, @box, @cntl
             op = @box.send @dir, @pt
         end
