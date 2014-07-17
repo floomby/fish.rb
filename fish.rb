@@ -132,7 +132,7 @@ class Interpreter
         'i' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (cntl[:ibuf].empty? ? -1 : cntl[:ibuf][0].ord); cntl[:ibuf] = cntl[:ibuf][1..-1] unless cntl[:ibuf].length < 1 },
         # reflection
         'g' => lambda { |pt, dir, stks, box, cntl| stks[-1].push (box.at (stks[-1].pop 2).reverse).ord },
-        'p' => lambda { |pt, dir, stks, box, cntl| v = (stks[-1].pop 1)[0]; box.set ((stks[-1].pop 2).reverse), v.chr },
+        'p' => lambda { |pt, dir, stks, box, cntl| v = (stks[-1].pop 1)[0]; box.set ((stks[-1].pop 2).reverse), v },
         # miscellaneous
         '&' => lambda { |pt, dir, stks, box, cntl| stks[-1].reg },
         ';' => lambda { |pt, dir, stks, box, cntl| cntl[:done] = true },
@@ -167,6 +167,8 @@ class Interpreter
         op = @box.at @pt
         while !@cntl[:done] do
             op = ' ' if op.nil?
+            abort "\nsomething smells fishy... (invalid instruction #{op})" unless op.respond_to? :chr
+            op = op.chr
             if options[:debug] >= 3; puts op end
             func = @@ops[op]
             abort "\nsomething smells fishy... (invalid instruction #{op})" if func.nil?

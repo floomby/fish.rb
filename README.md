@@ -14,7 +14,9 @@ Usage
 Todo
 ----
 
-Things are mostly done, it needs some thorough testing
+I am fairly convinced that it meets the spec with one exception.
+It fails to write floating points to the code box, this needs to
+be fixed.
 
  
 Thoughts
